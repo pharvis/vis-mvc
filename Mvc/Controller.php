@@ -35,20 +35,7 @@ abstract class Controller extends GenericController{
         $action = $parameters->exists('action') ? $parameters->get('action') : $parameters->add('action', 'index')->get('action');
 
         if(Obj::from($this)->hasMethod($action)){
-            
-            $moduleClass = Obj::from($this)->getNamespace() . 'Module';
-            
-            if(Obj::exists($moduleClass)){
-                $module = new $moduleClass();
-                
-                if(!$module instanceof Module){
-                    throw new \Core\Web\Http\HttpException(sprintf("%s class must inherit from Mvc\Module.", $moduleClass));
-                }
-            }else{
-                $module = new Module();
-            }
 
-            $module->load($this);
             $this->load();
             
             $result = Obj::from($this)->invokeMethod($action, $collection);
@@ -64,7 +51,6 @@ abstract class Controller extends GenericController{
             }
             
             $this->render($actionResult->execute());
-            $module->unload($this);
         }
     }
     
@@ -107,6 +93,6 @@ abstract class Controller extends GenericController{
     }
     
     public function __get($name) {
-        return $this->getConfiguration()->getServiceContainer()->get($name);
+        return $this->getConfiguration()->get('serviceContainer')->get($name);
     }
 }
