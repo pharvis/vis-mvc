@@ -27,8 +27,9 @@ class ViewEngineCollection implements \IteratorAggregate{
     }
     
     public function getTypeOf(string $class) : ViewEngine{
-        if(array_key_exists($class, $this->collection)){
-            return $this->collection[$class];
+        $className = str_replace('.', '\\', $class);
+        if(array_key_exists($className, $this->collection)){
+            return $this->collection[$className];
         }
     }
     

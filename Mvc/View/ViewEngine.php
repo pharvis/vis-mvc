@@ -10,6 +10,11 @@ abstract class ViewEngine{
     private $locationFormats = [];
     private $isDefault = false;
 
+    public function setViewLocationFormat(string $locationFormat){
+        $this->locationFormats[] = $locationFormat;
+        return $this;
+    }
+    
     public function setViewLocationFormats(array $locationFormats){
         $this->locationFormats = array_merge($this->locationFormats, $locationFormats);
         return $this;
@@ -28,5 +33,5 @@ abstract class ViewEngine{
         return $this->isDefault;
     }
     
-    public abstract function findView(HttpContext $httpContext) : IView;
+    public abstract function findView(HttpContext $httpContext, string $viewName = '') : IView;
 }

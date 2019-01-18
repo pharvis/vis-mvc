@@ -3,12 +3,14 @@
 namespace Mvc;
 
 use Core\Common\Obj;
+use Core\Common\Str;
 use Core\Configuration\Configuration;
 use Core\Web\Http\HttpException;
 use Core\Web\Http\GenericController;
 use Core\Web\Http\HttpContext;
 use Core\Web\Http\Request;
 use Core\Web\Http\Response;
+use Mvc\View\ViewEngineCollection;
 
 abstract class Controller extends GenericController{
     
@@ -32,7 +34,15 @@ abstract class Controller extends GenericController{
         $collection = $this->request->getCollection();
         $parameters = $this->request->getParameters();
 
-        $action = $parameters->exists('action') ? $parameters->get('action') : $parameters->add('action', 'index')->get('action');
+        if(!$parameters->exists('controller')){
+            $parameters->add('controller', (string)Str::set(get_called_class())->getAfterLastIndexOf('\\'));
+        }
+        
+        if(!$parameters->exists('action')){
+            $parameters->add('action', 'index');
+        }
+
+        $action = $parameters->get('action');
 
         if(Obj::from($this)->hasMethod($action)){
 
@@ -51,6 +61,8 @@ abstract class Controller extends GenericController{
             }
             
             $this->render($actionResult->execute());
+        }else{
+            throw new ActionNotFoundException(sprintf("action '%s' not found.", $action));
         }
     }
     
@@ -70,22 +82,31 @@ abstract class Controller extends GenericController{
         return $this->viewEngines;
     }
 
-    public function view(array $params = []){
+    public function view(array $params = [], string $viewName = ''){
         
         if($this->viewEngines->count() == 0){
             throw new HttpException("No ViewEngine registered.");
         }
-        
+
         foreach($this->viewEngines as $viewEngine){
             if($viewEngine->getIsDefault()){
-                $view = $viewEngine->findView($this->httpContext);
+                $view = $viewEngine->findView($this->httpContext, $viewName);  
                 if($view){
                     return new ViewResult($view, $params);
                 }
             }
         }
+        throw new HttpException("No default ViewEngine found.");
     }
     
+    public function json(array $params = [], int $options = null){
+        return new JsonResult($this->getResponse(), $params, $options);
+    }
+    
+    public function redirect(string $location, $params = null){
+        return new RedirectResult($this->getRequest(), $this->getResponse(), $location, $params);
+    }
+
     public function load(){}
     
     public function render(string $response){

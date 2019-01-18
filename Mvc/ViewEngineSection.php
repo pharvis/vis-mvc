@@ -10,16 +10,20 @@ use Mvc\View\NativeViewEngine;
 
 class ViewEngineSection implements IConfigurationSection{
     
-    public function execute(Configuration $configuration, \SimpleXMLElement $xml){
+    public function execute(Configuration $configuration, \XmlConfigElement $xml){
         $viewEngines = new ViewEngineCollection();
         $viewEngines->add((new NativeViewEngine())->setIsDefault(true));
         
-        if(isset($xml->mvc->viewEngines)){
-            foreach($xml->mvc->viewEngines->engine as $engine){
-                $default = strtolower($xml->viewEngines->engine['default']) == 'true' ? true : false;
-                $viewEngine = Obj::create((string)$engine->class)->get();
-                $viewEngine->setViewLocationFormats((array)$engine->locationFormat);
-                $viewEngine->setIsDefault($default);
+        if($xml->hasPath('mvc.0.viewEngines.0.engine')){ 
+            foreach($xml->mvc[0]->viewEngines[0]->engine as $engine){
+                //$default = strtolower($engine['default']) == 'true' ? 'ss' : false;
+                $viewEngine = Obj::create((string)$engine->class[0])->get();
+                
+                foreach($engine->locationFormat as $locationFormat){
+                    $viewEngine->setViewLocationFormat($locationFormat);
+                }
+
+                $viewEngine->setIsDefault(true);
                 $viewEngines->add($viewEngine);
             }
         }

@@ -4,7 +4,7 @@ namespace Mvc;
 
 class StringResult implements IActionResult{
     
-    protected $string;
+    protected $string = '';
     
     public function __construct($string){
         $this->string = $string;
