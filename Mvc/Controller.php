@@ -6,32 +6,33 @@ use Core\Common\Obj;
 use Core\Common\Str;
 use Core\Configuration\Configuration;
 use Core\Web\Http\HttpException;
-use Core\Web\Http\GenericController;
+use Core\Web\Http\IGenericController;
 use Core\Web\Http\HttpContext;
 use Core\Web\Http\Request;
 use Core\Web\Http\Response;
-use Mvc\View\ViewEngineCollection;
+use Mvc\View\ViewEngines;
 
-abstract class Controller extends GenericController{
+abstract class Controller implements IGenericController{
     
-    private $configuration = null;
+    private $config = null;
     private $httpContext = null;
     private $request = null;
     private $response = null;
     private $viewEngines = null;
     
-    public final function service(HttpContext $httpContext){
+    public final function service(Configuration $config, HttpContext $httpContext) : void{
 
-        $this->getConfigurationManager()->executeSection(new ServiceSection());
-        $this->getConfigurationManager()->executeSection(new ViewEngineSection());
-        
-        $this->configuration = $this->getConfigurationManager()->getConfiguration();
+        $this->config = $config;
+        $this->config->add('modules', new ModulesSection());
+        $this->config->add('serviceContainer', new ServiceSection());
+        $this->config->add('viewEngines', new ViewEngineSection());
+
         $this->httpContext = $httpContext;
         $this->request = $httpContext->getRequest();
         $this->response = $httpContext->getResponse();
-        $this->viewEngines = $this->getConfiguration()->get('viewEngines');
+        $this->viewEngines = $this->config->get('viewEngines');
+        $modules = $this->config->get('modules');
 
-        $collection = $this->request->getCollection();
         $parameters = $this->request->getParameters();
 
         if(!$parameters->exists('controller')){
@@ -44,11 +45,27 @@ abstract class Controller extends GenericController{
 
         $action = $parameters->get('action');
 
-        if(Obj::from($this)->hasMethod($action)){
+        $reflect = Obj::from($this);
+        
+        if($reflect->hasMethod($action)){
+            
+            foreach($modules as $module){
+                $module->load($this);
+            }
 
             $this->load();
             
-            $result = Obj::from($this)->invokeMethod($action, $collection);
+            $params = $reflect->getMethodParameters($action);
+            
+            $db = new DefaultModelBinder();
+            $actionArgs = [];
+            
+            foreach($params as $param){
+                $defaultValue = $param->isOptional() ? $param->getDefaultValue() : null;
+                $actionArgs[] = $db->bind($this->request, new BindingContext($param->name, $param->getType(), $param->isOptional(), $defaultValue));
+            }
+
+            $result = $reflect->invokeMethod($action, $actionArgs);
 
             if(!$result instanceof IActionResult){
                 if(is_scalar($result) || $result === null){
@@ -61,13 +78,17 @@ abstract class Controller extends GenericController{
             }
             
             $this->render($actionResult->execute());
+            
+            foreach($modules as $module){
+                $module->unload($this);
+            }
         }else{
-            throw new ActionNotFoundException(sprintf("action '%s' not found.", $action));
+            throw new ActionNotFoundException(sprintf("action '%s' not found.", $action), $action, $this->request->getUrl()->getRawUri());
         }
     }
     
     public function getConfiguration() : Configuration{
-        return $this->configuration;
+        return $this->config;
     }
     
     public function getRequest() : Request{
@@ -78,7 +99,7 @@ abstract class Controller extends GenericController{
         return $this->response;
     }
     
-    public function getViewEngines() : ViewEngineCollection{
+    public function getViewEngines() : ViewEngines{
         return $this->viewEngines;
     }
 
@@ -114,6 +135,6 @@ abstract class Controller extends GenericController{
     }
     
     public function __get($name) {
-        return $this->getConfiguration()->get('serviceContainer')->get($name);
+        return $this->config->get('serviceContainer')->get($name);
     }
 }

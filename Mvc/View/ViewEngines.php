@@ -2,7 +2,7 @@
 
 namespace Mvc\View;
 
-class ViewEngineCollection implements \IteratorAggregate{
+class ViewEngines implements \IteratorAggregate{
     
     protected $collection = [];
     
@@ -22,7 +22,7 @@ class ViewEngineCollection implements \IteratorAggregate{
         return count($this->collection);
     }
     
-    public function clear(){
+    public function clear() : void{
         $this->collection = [];
     }
     

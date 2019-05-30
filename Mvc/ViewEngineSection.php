@@ -3,15 +3,16 @@
 namespace Mvc;
 
 use Core\Common\Obj;
-use Core\Configuration\IConfigurationSection;
 use Core\Configuration\Configuration;
-use Mvc\View\ViewEngineCollection;
+use Core\Configuration\IConfigurationSection;
+use Mvc\View\ViewEngines;
 use Mvc\View\NativeViewEngine;
 
 class ViewEngineSection implements IConfigurationSection{
     
-    public function execute(Configuration $configuration, \XmlConfigElement $xml){
-        $viewEngines = new ViewEngineCollection();
+    public function execute(Configuration $config, \XmlConfigElement $xml){
+        
+        $viewEngines = new ViewEngines();
         $viewEngines->add((new NativeViewEngine())->setIsDefault(true));
         
         if($xml->hasPath('mvc.0.viewEngines.0.engine')){ 
@@ -28,6 +29,6 @@ class ViewEngineSection implements IConfigurationSection{
             }
         }
 
-        $configuration->add('viewEngines', $viewEngines);
+        return $viewEngines;
     }
 }

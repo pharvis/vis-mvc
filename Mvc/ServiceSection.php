@@ -2,15 +2,15 @@
 
 namespace Mvc;
 
-use Core\Configuration\IConfigurationSection;
 use Core\Configuration\Configuration;
+use Core\Configuration\IConfigurationSection;
 use Mvc\Service\ServiceContainer;
 use Mvc\Service\Service;
 use Mvc\Service\Argument;
 
 class ServiceSection implements IConfigurationSection{
     
-    public function execute(Configuration $configuration, \XmlConfigElement $xml){
+    public function execute(Configuration $config, \XmlConfigElement $xml){
         
         $serviceContainer = new ServiceContainer();
 
@@ -25,7 +25,7 @@ class ServiceSection implements IConfigurationSection{
                     if(array_key_exists('type', $argumentAttributes)){
 
                         if($argumentAttributes['type'] =='property'){
-                            $arg = $configuration->get('settings')->path((string)$arg);
+                            $arg = $config->get('settings')->path((string)$arg);
                         }
                         else if($argumentAttributes['type'] =='ref'){
                             $argument->setIsReference(true);
@@ -44,7 +44,6 @@ class ServiceSection implements IConfigurationSection{
             }
         }
 
-        $configuration->add('serviceContainer', $serviceContainer);
+        return $serviceContainer;
     }
 }
-

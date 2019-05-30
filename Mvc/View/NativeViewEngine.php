@@ -6,6 +6,8 @@ use Core\Common\Str;
 use Core\Web\Http\HttpContext;
 use Core\Web\View\IView;
 use Core\Web\View\NativeView;
+use Core\Web\View\Methods\Escape;
+use Core\Web\View\Methods\Obj;
 
 class NativeViewEngine extends ViewEngine{
     
@@ -14,7 +16,6 @@ class NativeViewEngine extends ViewEngine{
     public function __construct(){
         $this->setViewLocationFormat('~/views/{controller}/{action}.php');
         $this->view = new NativeView();
-        $this->view->addMethod('escape', new \Core\Web\View\Methods\Escape());
     }
     
     public function getView() : NativeView{
@@ -40,6 +41,10 @@ class NativeViewEngine extends ViewEngine{
             $this->view->getViewFiles()->add($file);
         }
         
+        $this->view->getViewMethods()->add('escape', new Escape());
+        $this->view->getViewMethods()->add('request', new Obj($httpContext->getRequest()));
+        $this->view->getViewMethods()->add('response', new Obj($httpContext->getResponse()));
+
         return $this->view;
     }
 }
